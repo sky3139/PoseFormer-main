@@ -50,12 +50,13 @@ class ChunkedGenerator:
     
         # Build lineage info
         pairs = [] # (seq_idx, start_frame, end_frame, flip) tuples
-        for i in range(len(poses_2d)):
+        for i in range(len(poses_2d)-2):
             assert poses_3d is None or poses_3d[i].shape[0] == poses_3d[i].shape[0]
             n_chunks = (poses_2d[i].shape[0] + chunk_length - 1) // chunk_length
             offset = (n_chunks * chunk_length - poses_2d[i].shape[0]) // 2
             bounds = np.arange(n_chunks+1)*chunk_length - offset
             augment_vector = np.full(len(bounds - 1), False, dtype=bool)
+            # print(np.repeat(i, len(bounds - 1)))
             pairs += zip(np.repeat(i, len(bounds - 1)), bounds[:-1], bounds[1:], augment_vector)
             if augment:
                 pairs += zip(np.repeat(i, len(bounds - 1)), bounds[:-1], bounds[1:], ~augment_vector)
@@ -118,9 +119,14 @@ class ChunkedGenerator:
                 for i, (seq_i, start_3d, end_3d, flip) in enumerate(chunks):
                     start_2d = start_3d - self.pad - self.causal_shift
                     end_2d = end_3d + self.pad - self.causal_shift
-
+                    
+                   
                     # 2D poses
+                    if len(self.poses_2d[seq_i])==len(self.poses_2d[seq_i+1]):
+                        # print(seq_i,len(self.poses_2d[seq_i]),len(self.poses_2d[seq_i+1]))
+                        seq_i+=1
                     seq_2d = self.poses_2d[seq_i]
+                    # print(seq_2d)
                     low_2d = max(start_2d, 0)
                     high_2d = min(end_2d, seq_2d.shape[0])
                     pad_left_2d = low_2d - start_2d
